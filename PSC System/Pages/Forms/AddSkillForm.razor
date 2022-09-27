@@ -1,0 +1,86 @@
+﻿
+@page "/AddSkillForm"
+
+@using Data
+@using Data.DataAccess
+@using Data.Model
+@using Services
+
+@inject IUserServices _User
+@inject IProfileData _Pdb
+@inject ICareerData _Cdb
+@inject IFieldData _Fdb
+@inject ISkillData _Sdb
+@inject NavigationManager NavManager
+@inject IUserSkillData _USdb
+
+<h3>AddSkillForm</h3>
+
+@if (skills is null)
+{
+    <center><p>loading.....</p></center>
+}
+else
+{
+<EditForm Model="@UserSkills" OnSubmit="@SubmitSkill">
+    <div class="form-group row">
+        <label for="name">Skill</label>
+    </div>
+    <div class="form-group row">
+        <InputSelect id="skills" @bind-Value="UserSkills.SID">
+            @foreach (var skill in skills)
+                {
+                <option value="@skill.SID">@skill.SkillName</option>
+                }
+        </InputSelect>
+        <button type="submit" class=" btn btn-primary">Add Skill</button>
+    </div>
+</EditForm>
+    
+}
+
+
+
+@code {
+
+    private UserSkillModel UserSkills = new UserSkillModel();
+    private SkillModel skill = new SkillModel();
+    private List<SkillModel> skills;
+    private int skillCount = 1;
+
+    private List<UserSkillJoinModel> UserSkill;
+
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        skills = await _Sdb.GetSkills();
+        UserSkill = await _USdb.GetUserSkills(_User.GetUserId());
+
+        if (UserSkill.Count >= 2)
+        {
+            NavManager.NavigateTo("/Profile");
+        }
+
+    }
+
+    private async Task SubmitSkill()
+    {
+        if (skillCount < 2)
+        {
+            UserSkills.Id = _User.GetUserId();
+            UserSkillModel newSkill = new UserSkillModel
+            {
+                SID = UserSkills.SID,
+                Id = UserSkills.Id,
+            };
+            await _USdb.InsertSkills(newSkill);
+            skillCount++;
+        }
+        else
+        {
+            NavManager.NavigateTo("/Profile");
+        }
+
+    }
+}

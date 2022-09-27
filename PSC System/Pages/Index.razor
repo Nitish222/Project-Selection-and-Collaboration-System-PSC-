@@ -1,0 +1,58 @@
+﻿@page "/"
+<style>
+    * {
+        box-sizing: border-box;
+    }
+
+    .column {
+        float: left;
+        width: 50%;
+        padding: 10px;
+        height: 300px;
+    }
+
+    .row:after {
+        content: "";
+        display: table;
+        clear: both;
+    }
+    #lastCol {
+        float: left;
+        width: 100%;
+        padding: 10px;
+        height: 300px;
+    }
+</style>
+<center><h1> Welcome to Project Selection and Collaboration System</h1></center>
+
+<center>
+    <AuthorizeView>
+        <NotAuthorized>
+            <p>Please Login to continue</p>
+        </NotAuthorized>
+        <Authorized>
+            <h1 style="color: red">Welcome @context.User.Identity.Name</h1>
+            <div class="row">
+                <div class="column">
+                    <h2>Current Project Relevance Score</h2>
+                    <h3>66</h3>
+                </div>
+                <div class="column">
+                    <h2>Current Skill Score</h2>
+                    <h3>66</h3>
+                </div>
+            </div>
+            <div class="row">
+                <div id="lastCol">
+                    <h2>
+                        Career Skill Diversification and Development Chart (Based on Projects Completed)
+                    </h2>
+                    <p>
+
+                    </p>
+                </div>
+            </div>
+        </Authorized>
+    </AuthorizeView>
+</center>
+

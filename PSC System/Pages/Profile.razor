@@ -1,0 +1,168 @@
+﻿@page "/profile"
+
+
+@using Data
+@using Data.DataAccess
+@using Data.Model
+@using Services
+
+@inject IUserServices _User
+@inject IProfileData _Pdb
+@inject ICareerData _Cdb
+@inject IFieldData _Fdb
+@inject ISkillData _Sdb
+@inject NavigationManager NavManager
+@inject IUserSkillData _USdb
+@inject IProjectData _ProjDb
+@inject IUserProjectData _UserProjdb
+@inject ICollaborationData _Coldb
+@inject IProjectSkillData _ProjSkillDb
+
+<style>
+    * {
+        box-sizing: border-box;
+    }
+
+    .column {
+        float: left;
+        width: 50%;
+        padding: 10px;
+        height: 300px;
+        border: solid black 4px;
+    }
+
+    .row:after {
+        content: "";
+        display: table;
+        clear: both;
+    }
+</style>
+
+<div>
+    <center>
+        <h1>Your Development Plan</h1>
+    </center>
+</div>
+<div class="row">
+    <div class="column">
+        <h2>Skills</h2>
+        @if (userskills is null)
+        {
+            <p>Loading...</p>
+        }
+        else
+        {
+            @foreach (var skill in userskills)
+            {
+                <div>
+                    <h4>@skill.SkillName</h4>
+                </div>
+
+            }
+            <a href="/AddSkillForm"><h4>Add Skill</h4></a>
+        }
+    </div>
+    <div class="column">
+        <h2>Current Project Skill</h2>
+
+        @if (projectskills is null)
+        {
+            <p>no project enrolled, please enroll in one</p>
+        }
+        else
+        {
+            if (skillslist is null)
+            {
+
+            }
+            else
+            {
+                foreach (var skill in projectskills)
+                {
+                    foreach (var rskill in skillslist)
+                    {
+                        if (rskill.SID == skill.SID)
+                        {
+                            <p>@rskill.SkillName</p>
+                        }
+
+                    }
+
+                }
+            }
+
+        }
+
+    </div>
+</div>
+<div class="row">
+    <div class="column">
+        <h2>Career Choice</h2>
+        @if (userCareer is null)
+        {
+            <p>Loading...</p>
+        }
+        else
+        {
+            
+            @foreach (var career in userCareer)
+            {
+
+                <h4>@career.CareerName</h4>
+            }
+        }
+    </div>
+    <div class="column">
+        <h2>Contribution Score</h2>
+        <p>0</p>
+    </div>
+</div>
+
+
+@code {
+    private int currentCount = 0;
+
+    private List<UserSkillJoinModel> userskills;
+
+    private List<CareerChoiceJoinModel> userCareer;
+
+    private List<ProjectSkillsModel> projectskills;
+    private UserProjectModel proj = new UserProjectModel();
+
+    private List<SkillModel> skillslist;
+
+    private List<UserProjectModel> userprojects;
+
+    protected override async Task OnInitializedAsync()
+    {
+        string Id = _User.GetUserId();
+        userskills = await _USdb.GetUserSkills(Id);
+        userCareer = await _Cdb.GetUserCareer(Id);
+        userprojects = await _UserProjdb.GetUserProject(_User.GetUserId());
+        if (userprojects is null)
+        {
+
+        }
+        else
+        {
+            proj = userprojects.Find(f => f.Id == _User.GetUserId());
+        }
+
+        if(proj is null)
+        {
+
+        }
+        else
+        {
+            projectskills = await _ProjSkillDb.GetProjectSkills(proj.PID);
+        }
+
+
+        skillslist = await _Sdb.GetSkills();
+    }
+    private void IncrementCount()
+    {
+        currentCount++;
+    }
+
+}

@@ -1,0 +1,51 @@
+﻿<div class="top-row pl-4 navbar navbar-dark">
+    <a class="navbar-brand" href="">PSC System</a>
+    <button class="navbar-toggler" @onclick="ToggleNavMenu">
+        <span class="navbar-toggler-icon"></span>
+    </button>
+</div>
+
+<div class="@NavMenuCssClass" @onclick="ToggleNavMenu">
+    <ul class="nav flex-column">
+        <AuthorizeView>
+            <Authorized>
+                <li class="nav-item px-3">
+                    <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
+                        <span class="oi oi-home" aria-hidden="true"></span> Home
+                    </NavLink>
+                </li>
+                <li class="nav-item px-3">
+                    <NavLink class="nav-link" href="/FORMS/ProfileOnboarding">
+                        <span class="oi oi-plus" aria-hidden="true"></span> Profile
+                    </NavLink>
+                </li>
+                <li class="nav-item px-3">
+                    <NavLink class="nav-link" href="ProjectHome">
+                        <span class="oi oi-list-rich" aria-hidden="true"></span> Create Project
+                    </NavLink>
+                </li>
+                <li class="nav-item px-3">
+                    <NavLink class="nav-link" href="ProjectStatus">
+                        <span class="oi oi-project" aria-hidden="true"></span> Project Stats
+                    </NavLink>
+                </li>
+                @*<li class="nav-item px-3">
+                    <NavLink class="nav-link" href="CollaborationPage">
+                        <span class="oi oi-people" aria-hidden="true"></span> Collaboration
+                    </NavLink>
+                </li>*@
+            </Authorized>
+        </AuthorizeView>
+    </ul>
+</div>
+
+@code {
+    private bool collapseNavMenu = true;
+
+    private string NavMenuCssClass => collapseNavMenu ? "collapse" : null;
+
+    private void ToggleNavMenu()
+    {
+        collapseNavMenu = !collapseNavMenu;
+    }
+}

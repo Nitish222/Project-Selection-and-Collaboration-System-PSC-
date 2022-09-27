@@ -1,0 +1,161 @@
+﻿@page "/ProjectHome"
+
+
+@using Data
+@using Data.DataAccess
+@using Data.Model
+@using Services
+
+@inject IUserServices _User
+@inject IProfileData _Pdb
+@inject ICareerData _Cdb
+@inject IFieldData _Fdb
+@inject ISkillData _Sdb
+@inject NavigationManager NavManager
+@inject IUserSkillData _USdb
+@inject IProjectData _ProjDb
+@inject IUserProjectData _UserProjdb
+
+
+<style>
+    .center {
+        text-align: center;
+        border: 3px solid green;
+    }
+</style>
+<h1 style="text-align: center">Start Your Project Journey Here!!</h1>
+<h3>
+    Choose From Potential Projects Available For Or Start A New One by Entering Your Work Area
+</h3>
+@if (contains)
+{
+<div class="center">
+    <div class="center">
+        <p>You already Got an active project</p>
+    </div>
+</div>
+}
+
+else
+{
+    <h3>Enter Wanted Project Timeline in Days</h3>
+    <EditForm Model="@Selectedsuggestion" OnSubmit="@AddSuggestion">
+        <InputNumber id="time" @bind-Value="@Selectedsuggestion.PTIME">
+        </InputNumber>
+        <button type="submit">
+            Show Suggestion
+        </button>
+    </EditForm>
+}
+
+@if (showSuggestion)
+{
+    if (suggestions is null)
+    {
+        <p>Loading....</p>
+        <p>@currUser.Id</p>
+        <p>@message</p>
+    }
+    else
+    {
+
+        foreach (var proj in suggestions)
+        {
+            Selectedsuggestion.ProjectName = proj.ProjectName;
+            Selectedsuggestion.PID = proj.PID;
+            <div class="center">
+                <div class="center">
+                    <p>@proj.ProjectName</p>
+                    <button @onclick="@StartProject">Start Project</button>
+                </div>
+            </div>
+        }
+
+    }
+
+}
+
+
+
+@code {
+    private List<ProjectModel> projectsList;
+
+    private ProjectSuggestionModel Selectedsuggestion = new ProjectSuggestionModel();
+
+    private ProfileModel currUser = new ProfileModel();
+
+    private List<ProfileModel> profile;
+
+    private List<ProjectModel> suggestions = new List<ProjectModel>();
+
+    private List<UserProjectModel> currentProj;
+
+    private int time;
+
+    private bool contains;
+
+    private bool showSuggestion = false;
+
+    private string message;
+
+    private int teamMemberCount=0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        projectsList = await _ProjDb.GetProject();
+        profile = await _Pdb.GetProfile();
+        currentProj = await _UserProjdb.GetUserProject(_User.GetUserId());
+
+        contains = currentProj.Any(f => f.Id == _User.GetUserId());
+        if (profile is null)
+        {
+        }
+        else
+        {
+            currUser = profile.Find(f => f.Id == _User.GetUserId());
+        }
+
+        if (projectsList is null)
+        {
+            message = "nothing in Project List ";
+        }
+        else
+        {
+            foreach (var proj in projectsList)
+            {
+                if (currUser.FID == proj.FID)
+                {
+                    suggestions.Add(new ProjectModel
+                    {
+                        FID = proj.FID,
+                        PID = proj.PID,
+                        ProjectName = proj.ProjectName,
+                    });
+                }
+            }
+        }
+
+    }
+
+    private async Task StartProject()
+    {
+        UserProjectModel newProj = new UserProjectModel
+        {
+            Id = _User.GetUserId(),
+            PTIME = Selectedsuggestion.PTIME,
+            PID = Selectedsuggestion.PID,
+        };
+
+        await _UserProjdb.InsertUserProject(newProj);
+
+
+        NavManager.NavigateTo("/CollaborationForm");
+
+    }
+
+    private async Task AddSuggestion()
+    {
+        time = Selectedsuggestion.PTIME;
+        showSuggestion = true;
+    }
+}

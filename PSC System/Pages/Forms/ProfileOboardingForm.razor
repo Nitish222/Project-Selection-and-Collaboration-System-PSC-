@@ -1,0 +1,116 @@
+﻿@page "/FORMS/ProfileOnboarding"
+
+@using Data
+@using Data.DataAccess
+@using Data.Model
+@using Services
+
+@inject IUserServices _User
+@inject IProfileData _Pdb
+@inject ICareerData _Cdb
+@inject IFieldData _Fdb
+@inject ISkillData _Sdb
+@inject NavigationManager NavManager
+@inject IUserSkillData _USdb
+<h1>Profile Oboarding</h1>
+
+<h4>Setup Your Profile</h4>
+
+
+@if (!Contain)
+{
+    @if (careers is null)
+    {
+        <center><p>Loading......</p></center>
+    }
+
+    else
+    {
+        <EditForm Model="@CurrentUser" OnValidSubmit="@SubmitProfile">
+
+            <div class="form-group row">
+                <label for="name">Full Name</label>
+                <InputText id="name" @bind-Value="CurrentUser.Name" />
+            </div>
+
+            <div class="form-group row">
+                <label for="name">Career</label>
+                <InputSelect id="career" @bind-Value="CurrentUser.CID">
+                    @foreach (var career in careers)
+                            {
+                        <option value="@career.CID">@career.CareerName</option>
+                            }
+                </InputSelect>
+            </div>
+
+            <div class="form-group row">
+                <label for="name">Field</label>
+                <InputSelect id="field" @bind-Value="CurrentUser.FID">
+                    @foreach (var field in fields)
+                            {
+                        <option value="@field.FID">@field.FieldName</option>
+                            }
+                </InputSelect>
+            </div>
+
+            <div class="form-group row">
+                <button type="submit" class=" btn btn-primary"> submit </button>
+            </div>
+        </EditForm>
+
+    }
+}
+else
+{
+    NavManager.NavigateTo("/Profile");
+}
+
+
+
+@code {
+    private ProfileModel CurrentUser = new ProfileModel();
+
+    private List<CareerModel> careers;
+
+    private List<FieldsModel> fields;
+
+    private List<ProfileModel> profile;
+
+    private bool Contain;
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        profile = await _Pdb.GetProfile();
+        careers = await _Cdb.GetCareer();
+        fields = await _Fdb.GetField();
+        
+        Contain = profile.Any(f => f.Id == _User.GetUserId());
+    
+    }
+
+    private async Task SubmitProfile()
+    {
+
+        CurrentUser.Id = _User.GetUserId();
+        ProfileModel newUser = new ProfileModel
+        {
+
+            Id = _User.GetUserId(),
+            Name = CurrentUser.Name,
+            CID = CurrentUser.CID,
+            FID = CurrentUser.FID,
+        };
+        await _Pdb.InsertProfile(CurrentUser);
+
+        profile = await _Pdb.GetProfile();
+        Contain = profile.Any(f => f.Id == _User.GetUserId());
+
+        if (Contain)
+        {
+         
+                NavManager.NavigateTo("/Profile");
+        }
+
+    }
+}

@@ -1,0 +1,276 @@
+﻿@page "/ProjectStatus"
+
+
+@using Data
+@using Data.DataAccess
+@using Data.Model
+@using Services
+
+@inject IUserServices _User
+@inject IProfileData _Pdb
+@inject ICareerData _Cdb
+@inject IFieldData _Fdb
+@inject ISkillData _Sdb
+@inject NavigationManager NavManager
+@inject IUserSkillData _USdb
+@inject IProjectData _ProjDb
+@inject IUserProjectData _UserProjdb
+@inject ICollaborationData _Coldb
+@inject IProjectSkillData _ProjSkillDb
+@inject IProjectRequestData _ProjReqDb
+<style>
+    * {
+        box-sizing: border-box;
+    }
+
+    .column {
+        float: left;
+        width: 50%;
+        padding: 10px;
+        height: 300px;
+        border: solid black 4px;
+    }
+
+    .row:after {
+        content: "";
+        display: table;
+        clear: both;
+    }
+</style>
+
+<div>
+    <center>
+        <h1>ProjectStatus</h1>
+    </center>
+</div>
+<div class="row">
+    <div class="column">
+        <h2>Current Project</h2>
+        @if (userprojects is null)
+        {
+            <p>enroll in project or create one</p>
+        }
+        else
+        {
+            if (projects is null)
+            {
+
+            }
+            else
+            {
+                if (proj is null)
+                {
+                    if (colabs is null)
+                    {
+
+                    }
+                    else
+                    {
+                        ProjectModel userproj = projects.Find(f => f.PID == colabs.Find(c=> c.Id == _User.GetUserId()).UPID);
+                        <p>@userproj.ProjectName</p>
+                    }
+
+
+                }
+                else
+                {
+                    ProjectModel userproj = projects.Find(f => f.PID == proj.PID);
+                    <p>@userproj.ProjectName</p>
+                }
+
+
+            }
+
+        }
+    </div>
+    <div class="column">
+        <h2>Current Team</h2>
+        
+
+            @if (Team is null)
+            {
+
+            }
+            else
+            {
+
+
+                if (profiles is null)
+                {
+
+                }
+                else
+                {
+                    foreach (var team in Team)
+                    {
+                        foreach (var prof in profiles)
+                        {
+                            if (prof.Id == team.Id)
+                            {
+                                <p>@prof.Name</p>
+                            }
+                        }
+                    }
+                }
+
+            }
+
+    </div>
+</div>
+<center>
+    <div class="row">
+        <div class="column">
+            <h2>
+                Collaboration Opportunity (collaboration Requests)
+            </h2>
+            @if (userprojects is null)
+            {
+                @if (Team is null)
+                {
+                    <p> no new request</p>
+                }
+                else
+                {
+                    bool contain = Team.Any(f => f.Id == _User.GetUserId());
+                    if (contain)
+                    {
+                        <p> can enroll in only one project</p>
+                    }
+                    else
+                    {
+                        if (requests is null)
+                        {
+                            <p>no new requests</p>
+                        }
+                        else
+                        {
+                            if (projects is null)
+                            {
+
+                            }
+                            else
+                            {
+                                foreach (var req in requests)
+                                {
+                                    foreach (var projec in projects)
+                                    {
+                                        if (projec.PID == req.UPID)
+                                        {
+                                            <p>@projec.ProjectName</p>
+                                            <button @onclick="args => AcceptReq(req.RID,req.UPID,args)">Accept Request</button>
+                                        }
+                                    }
+
+                                }
+                            }
+
+                        }
+
+                    }
+                }
+            }
+            else
+            {
+                <p> can enroll in only one </p>
+            }
+        </div>
+    </div>
+</center>
+
+
+
+@code {
+    private List<CollaborationModel> Team;
+
+    private List<UserSkillJoinModel> userSkills;
+
+    private List<ProjectSkillsModel> projectSkills;
+
+    private List<UserProjectModel> userprojects;
+
+    private List<ProjectModel> projects;
+
+    private List<ProjectRequestModel> requests;
+
+    private List<CollaborationModel> potentialusers;
+
+    private CollaborationModel AddSugestionUser;
+
+    private float SkillRelevanceScore;
+
+    private float SkillScore = 0;
+
+    private bool display = true;
+
+    private float CurrentProjectScore = 100;
+
+    private CollaborationMLModel MLModel { get; set; }
+
+    private List<ProfileModel> profiles;
+
+    private List<CollaborationModel> colabs;
+
+    private List<CollaborationMLModel> InputList = new List<CollaborationMLModel>();
+
+    private List<MLComparisonModel> OutputList = new List<MLComparisonModel>();
+
+    private MLModel1.ModelOutput result;
+
+    private IEnumerable<MLComparisonModel> finalOut;
+
+    private List<ProfileModel> suggestedProfile = new List<ProfileModel>();
+
+    private UserProjectModel proj = new UserProjectModel();
+
+    private List<UserProjectModel> allUproj;
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        colabs = await _Coldb.GetTeam();
+        requests = await _ProjReqDb.GetRequest(_User.GetUserId());
+
+        userprojects = await _UserProjdb.GetUserProject(_User.GetUserId());
+
+        allUproj = await _UserProjdb.GetAllProject();
+
+        if (userprojects is null)
+        {
+
+        }
+        else
+        {
+            proj = userprojects.Find(f => f.Id == _User.GetUserId());
+        }
+        projects = await _ProjDb.GetProject();
+
+        if(proj is null)
+        {
+
+        }
+        else
+        {
+            Team = await _Coldb.GetProjectUsers(proj.UPID);
+        }
+
+
+        profiles = await _Pdb.GetProfile();
+
+
+
+
+    }
+    private async Task AcceptReq(int RID, int UPID, MouseEventArgs args)
+    {
+        CollaborationModel col = new CollaborationModel
+        {
+            Id = _User.GetUserId(),
+            UPID = UPID,
+        };
+
+        await _Coldb.InsertCollaboration(col);
+        await _ProjReqDb.DeleteRequest(RID);
+
+        requests = await _ProjReqDb.GetRequest(_User.GetUserId());
+    }
+}

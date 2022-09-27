@@ -1,0 +1,66 @@
+﻿@page "/CollaborationPage"
+
+@using Data
+@using Data.DataAccess
+@using Data.Model
+@using Services
+
+@inject IUserServices _User
+@inject IProfileData _Pdb
+@inject ICareerData _Cdb
+@inject IFieldData _Fdb
+@inject ISkillData _Sdb
+@inject NavigationManager NavManager
+@inject IUserSkillData _USdb
+@inject IProjectData _ProjDb
+@inject IUserProjectData _UserProjdb
+@inject ICollaborationData _Coldb
+@inject IProjectSkillData _ProjSkillDb
+@inject ISkillScoreData _SkillScoredb
+
+<style>
+    * {
+        box-sizing: border-box;
+    }
+
+    .column {
+        float: left;
+        width: 50%;
+        padding: 10px;
+        height: 300px;
+        border: solid black 4px;
+    }
+
+    .row:after {
+        content: "";
+        display: table;
+        clear: both;
+    }
+</style>
+
+<div>
+    <center>
+        <h1>Collaboration</h1>
+    </center>
+</div>
+
+
+<div class="row">
+    <div class="column">
+        <h2>Current Project</h2>
+        <EditForm>
+            <p>Some text..</p>
+        </EditForm>
+        
+    </div>
+</div>
+
+@code {
+    private List<SkillScoreData> SkillScores;
+
+    protected override async Task OnInitializedAsync()
+    {
+       
+
+    }
+}

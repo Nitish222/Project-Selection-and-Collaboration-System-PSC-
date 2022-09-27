@@ -1,0 +1,232 @@
+﻿@page "/CollaborationForm"
+
+@using Data
+@using Data.DataAccess
+@using Data.Model
+@using Services
+
+@inject IUserServices _User
+@inject IProfileData _Pdb
+@inject ICareerData _Cdb
+@inject IFieldData _Fdb
+@inject ISkillData _Sdb
+@inject NavigationManager NavManager
+@inject IUserSkillData _USdb
+@inject IProjectData _ProjDb
+@inject IUserProjectData _UserProjdb
+@inject ICollaborationData _Coldb
+@inject IProjectSkillData _ProjSkillDb
+
+
+
+
+<style>
+    .center {
+        text-align: center;
+        border: 3px solid green;
+    }
+</style>
+
+
+<h1 style="text-align:center">Select Potential Team Members</h1>
+@if (finalOut is null)
+{
+    <p>nothing</p>
+    <button @onclick="assignSkillScore">Test</button>
+    <p>@InputList</p>
+}
+else
+{
+    @foreach (var user in finalOut)
+    {
+        foreach (var profile in profiles)
+        {
+            if (user.Id == profile.Id)
+            {
+                <div class="center">
+                    <div class="center">
+                        <p>@profile.Name</p>
+                        <p>Score: @user.score</p>
+                        <button @onclick="args => AddSuggestion(user.Id,args)">Add User</button>
+                    </div>
+                </div>
+                
+            }
+
+        }
+
+    }
+}
+
+
+
+
+@code {
+
+    private List<CollaborationModel> Team;
+
+    private List<UserSkillJoinModel> userSkills;
+
+    private List<ProjectSkillsModel> projectSkills;
+
+    private List<UserProjectModel> userprojects;
+
+    private List<CollaborationModel> potentialusers;
+
+    private CollaborationModel AddSugestionUser;
+
+    private float SkillRelevanceScore;
+
+    private float SkillScore = 0;
+
+    private float CurrentProjectScore = 100;
+
+    private CollaborationMLModel MLModel { get; set; }
+
+    private List<ProfileModel> profiles;
+
+    private List<CollaborationMLModel> InputList = new List<CollaborationMLModel>();
+
+    private List<MLComparisonModel> OutputList = new List<MLComparisonModel>();
+
+    private MLModel1.ModelOutput result;
+
+    private IEnumerable<MLComparisonModel> finalOut;
+
+    private List<ProfileModel> suggestedProfile = new List<ProfileModel>();
+
+    //get if user has a project in either User projects or Collaboration
+
+    //assign score
+
+    //pass to ML model
+    //Load sample data
+    private float score;
+
+    protected override async Task OnInitializedAsync()
+    {
+        Team = await _Coldb.GetTeam();
+        userSkills = await _USdb.GetSkills();
+        userprojects = await _UserProjdb.GetUserProject(_User.GetUserId());
+        UserProjectModel proj = new UserProjectModel();
+        profiles = await _Pdb.GetProfile();
+        if (userprojects is null)
+        {
+
+        }
+        else
+        {
+            proj = userprojects.Find(f => f.Id == _User.GetUserId());
+        }
+
+        if (proj is null)
+        {
+
+        }
+        else
+        {
+            projectSkills = await _ProjSkillDb.GetProjectSkills(proj.UPID);
+        }
+
+        potentialusers = await _Coldb.GetTeam();
+
+        await assignSkillScore();
+
+        if (InputList is null)
+        {
+
+        }
+        else
+        {
+            foreach (var user in InputList)
+            {
+                var sampleData = new MLModel1.ModelInput()
+                {
+                    Id = user.Id,
+                    User_ID = user.UserID,
+                    Current_Project = user.CurrentProject,
+                    Skill_Relevance = user.SkillRelevance,
+                    Skill_Score = user.SkillScore,
+                };
+
+                result = MLModel1.Predict(sampleData);
+
+                score = result.Score;
+                OutputList.Add(
+                        new MLComparisonModel
+                        {
+                            Id = user.UserID,
+                            score = score
+                        }
+                );
+
+            }
+            var sortedOutput = OutputList.OrderByDescending(x => x.score);
+
+            var recommendationUser = sortedOutput.Take(3);
+
+            finalOut = recommendationUser;
+        }
+
+
+    }
+
+    private async Task assignSkillScore()
+    {
+        if (userSkills is null)
+        {
+
+        }
+        else
+        {
+            foreach (var user in userSkills)
+            {
+
+                if (projectSkills is null)
+                {
+
+                }
+                else
+                {
+                    //+50 for each skill
+                    foreach (var currprojectskills in projectSkills)
+                    {
+                        if (user.SID == currprojectskills.SID)
+                        {
+                            SkillScore += 50;
+
+                            InputList.Add(new CollaborationMLModel
+                            {
+                                CurrentProject = CurrentProjectScore,
+                                SkillRelevance = SkillRelevanceScore,
+                                SkillScore = SkillScore,
+                                UserID = user.Id,
+
+                            });
+                        }
+                    }
+                }
+
+            }
+        }
+
+
+    }
+
+
+    private async Task AddSuggestion(string Id,MouseEventArgs args)
+    {
+        CollaborationModel col = new CollaborationModel
+        {
+            Id = Id,
+            UPID = userprojects.First().UPID,
+        };
+
+        await _Coldb.InsertCollaboration(col);
+
+        NavManager.NavigateTo("/ProjectStatus");
+    }
+}
+
+
+}
